@@ -2,6 +2,8 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8">
+  <!-- 阻止浏览器请求 favicon，消除 404 报错 -->
+  <link rel="icon" href="data:,">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -18,7 +20,6 @@
       height: 200px;
       cursor: pointer;
     }
-    /* 黑胶唱片：默认露出左边 */
     .vinyl {
       position: absolute;
       left: -20px;
@@ -29,7 +30,6 @@
       z-index: 1;
       transition: transform 0.4s ease-in-out;
     }
-    /* 专辑封面：盖在黑胶上方 */
     .cover {
       position: absolute;
       right: 0;
@@ -41,7 +41,6 @@
       z-index: 2;
       box-shadow: 0 4px 12px rgba(0,0,0,0.25);
     }
-    /* 悬停抽出与旋转效果 */
     .album-container:hover .vinyl {
       transform: translateX(-50px) rotate(180deg);
     }
@@ -57,17 +56,15 @@
   <script>
     const urlParams = new URLSearchParams(window.location.search);
     let coverName = urlParams.get('cover');
-    const defaultCover = 'https://via.placeholder.com/200?text=No+Cover';
+    
+    // 更换国内可稳定访问的默认占位图（显示 NO COVER）
+    const defaultCover = 'https://dummyimage.com/200x200/cccccc/ffffff.png&text=No+Cover';
     
     if (coverName) {
       coverName = decodeURIComponent(coverName);
-      // 1. 如果传的是完整网址 (http/https)
       if (coverName.startsWith('http://') || coverName.startsWith('https://')) {
         document.getElementById('albumCover').src = coverName;
-      } 
-      // 2. 如果传的是相对路径或文件名（如 cover1.png 或 cover1）
-      else {
-        // 如果没有写后缀名，默认按 .png 处理
+      } else {
         if (!coverName.includes('.')) {
           coverName += '.png';
         }
