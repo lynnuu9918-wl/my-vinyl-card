@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: transparent;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .album-container {
+      position: relative;
+      width: 200px;
+      height: 200px;
+      cursor: pointer;
+    }
+    /* 黑胶唱片：默认露出左边 */
+    .vinyl {
+      position: absolute;
+      left: -20px;
+      top: 10px;
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      z-index: 1;
+      transition: transform 0.4s ease-in-out;
+    }
+    /* 专辑封面：盖在黑胶上方 */
+    .cover {
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: 200px;
+      height: 200px;
+      border-radius: 6px;
+      object-fit: cover;
+      z-index: 2;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    }
+    /* 悬停抽出与旋转效果 */
+    .album-container:hover .vinyl {
+      transform: translateX(-50px) rotate(180deg);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="album-container">
+    <!-- 黑胶唱片底图 -->
+    <img class="vinyl" src="https://img.icons8.com/emoji/200/vinyl-record-emoji.png" alt="Vinyl">
+    <!-- 动态替换的专辑封面 -->
+    <img class="cover" id="albumCover" src="" alt="Album Cover">
+  </div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const coverName = urlParams.get('cover');
+    const defaultCover = 'https://via.placeholder.com/200?text=No+Cover';
+    
+    if (coverName) {
+      if (coverName.startsWith('http://') || coverName.startsWith('https://')) {
+        document.getElementById('albumCover').src = decodeURIComponent(coverName);
+      } else {
+        document.getElementById('albumCover').src = coverName.startsWith('covers/') ? coverName : `covers/${coverName}`;
+      }
+    } else {
+      document.getElementById('albumCover').src = defaultCover;
+    }
+  </script>
+
+</body>
+</html>
