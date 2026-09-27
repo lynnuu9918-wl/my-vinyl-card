@@ -2,7 +2,6 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8">
-  <!-- 阻止浏览器请求 favicon，消除 404 报错 -->
   <link rel="icon" href="data:,">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -56,19 +55,27 @@
   <script>
     const urlParams = new URLSearchParams(window.location.search);
     let coverName = urlParams.get('cover');
-    
-    // 更换国内可稳定访问的默认占位图（显示 NO COVER）
     const defaultCover = 'https://dummyimage.com/200x200/cccccc/ffffff.png&text=No+Cover';
     
     if (coverName) {
-      coverName = decodeURIComponent(coverName);
+      coverName = decodeURIComponent(coverName).trim();
+      
+      // 1. 网络完整外链 (http/https)
       if (coverName.startsWith('http://') || coverName.startsWith('https://')) {
         document.getElementById('albumCover').src = coverName;
-      } else {
+      } 
+      // 2. 本地仓库图片处理
+      else {
+        // 如果用户写了 covers/ 前缀，先去掉，方便统一处理
+        if (coverName.startsWith('covers/')) {
+          coverName = coverName.replace('covers/', '');
+        }
+        // 如果没写文件后缀，默认补上 .png
         if (!coverName.includes('.')) {
           coverName += '.png';
         }
-        document.getElementById('albumCover').src = coverName.startsWith('covers/') ? coverName : `covers/${coverName}`;
+        // 统一拼接 covers/ 路径
+        document.getElementById('albumCover').src = `./covers/${coverName}`;
       }
     } else {
       document.getElementById('albumCover').src = defaultCover;
