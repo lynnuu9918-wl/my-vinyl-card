@@ -15,17 +15,17 @@
     }
     .album-container {
       position: relative;
-      width: 200px;
+      width: 250px; /* 容器宽度调大，给右侧露出的黑胶留出空间 */
       height: 200px;
       cursor: pointer;
     }
-    /* 黑胶唱片：默认隐藏在右侧 */
+    /* 黑胶唱片：尺寸调大至 196px，与 200px 封面几乎同高 */
     .vinyl {
       position: absolute;
-      right: -20px;
-      top: 10px;
-      width: 180px;
-      height: 180px;
+      right: 0px; /* 默认靠最右侧，露出一大部分 */
+      top: 2px;
+      width: 196px;
+      height: 196px;
       border-radius: 50%;
       z-index: 1;
       transition: transform 0.4s ease-in-out;
@@ -53,7 +53,7 @@
       border-radius: 50%;
       z-index: 2;
     }
-    /* 专辑封面：盖在左侧上方 */
+    /* 专辑封面：固定在左侧，盖在黑胶上方 */
     .cover {
       position: absolute;
       left: 0;
@@ -65,9 +65,9 @@
       z-index: 2;
       box-shadow: 0 4px 12px rgba(0,0,0,0.25);
     }
-    /* 悬停时黑胶向右抽出并顺时针旋转 */
+    /* 鼠标悬停时：黑胶向左平移 50px 收回到封面内部，并带有旋转效果 */
     .album-container:hover .vinyl {
-      transform: translateX(50px) rotate(180deg);
+      transform: translateX(-50px) rotate(-180deg);
     }
   </style>
 </head>
