@@ -19,17 +19,16 @@
       height: 200px;
       cursor: pointer;
     }
-    /* 黑胶唱片：SVG 纯代码绘制 */
+    /* 黑胶唱片：默认隐藏在右侧 */
     .vinyl {
       position: absolute;
-      left: -20px;
+      right: -20px;
       top: 10px;
       width: 180px;
       height: 180px;
       border-radius: 50%;
       z-index: 1;
       transition: transform 0.4s ease-in-out;
-      /* 纯黑胶金属质感与纹理效果 */
       background: radial-gradient(circle, #111 18%, #333 18%, #111 28%, #222 38%, #111 48%, #222 58%, #111 68%, #000 100%);
       box-shadow: 0 4px 10px rgba(0,0,0,0.3);
       display: flex;
@@ -54,10 +53,10 @@
       border-radius: 50%;
       z-index: 2;
     }
-    /* 专辑封面：盖在黑胶上方 */
+    /* 专辑封面：盖在左侧上方 */
     .cover {
       position: absolute;
-      right: 0;
+      left: 0;
       top: 0;
       width: 200px;
       height: 200px;
@@ -66,18 +65,16 @@
       z-index: 2;
       box-shadow: 0 4px 12px rgba(0,0,0,0.25);
     }
-    /* 鼠标悬停抽出与旋转效果 */
+    /* 悬停时黑胶向右抽出并顺时针旋转 */
     .album-container:hover .vinyl {
-      transform: translateX(-50px) rotate(180deg);
+      transform: translateX(50px) rotate(180deg);
     }
   </style>
 </head>
 <body>
 
   <div class="album-container">
-    <!-- SVG / CSS 绘制的黑胶 -->
     <div class="vinyl"></div>
-    <!-- 动态替换的专辑封面 -->
     <img class="cover" id="albumCover" src="" alt="Album Cover">
   </div>
 
