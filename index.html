@@ -13,22 +13,23 @@
       height: 100vh;
       overflow: hidden;
     }
+    /* 1. 加宽容器宽度（从 250px 改为 280px），给黑胶向右凸出留足空间 */
     .album-container {
       position: relative;
-      width: 250px;
+      width: 280px; 
       height: 200px;
       cursor: pointer;
     }
-    /* 黑胶唱片：调整定位，使其正好露出红圈边缘 */
+    /* 2. 调整黑胶定位（right: 0px），使其向右移出更多，露出红圈 */
     .vinyl {
       position: absolute;
-      right: 12px; /* 调整距离，恰好露出红圈边沿 */
+      right: 0px; 
       top: 2px;
       width: 196px;
       height: 196px;
       border-radius: 50%;
       z-index: 1;
-      /* 加长过渡时间，让收回与旋转动画更柔和自然 */
+      /* 动画过渡时间与缓动曲线 */
       transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
       background: radial-gradient(circle, #111 18%, #333 18%, #111 28%, #222 38%, #111 48%, #222 58%, #111 68%, #000 100%);
       box-shadow: 0 4px 10px rgba(0,0,0,0.3);
@@ -55,7 +56,7 @@
       border-radius: 50%;
       z-index: 2;
     }
-    /* 专辑封面：固定在最左侧盖住黑胶 */
+    /* 专辑封面：固定在最左侧 */
     .cover {
       position: absolute;
       left: 0;
@@ -67,9 +68,9 @@
       z-index: 2;
       box-shadow: 0 4px 12px rgba(0,0,0,0.25);
     }
-    /* 悬停效果：向左平移 38px 彻底藏进封面，同时逆时针旋转 240 度 */
+    /* 3. 悬停效果：加大向左平移的距离（-75px），确保能完全收回藏入封面后 */
     .album-container:hover .vinyl {
-      transform: translateX(-38px) rotate(-240deg);
+      transform: translateX(-75px) rotate(-240deg);
     }
   </style>
 </head>
