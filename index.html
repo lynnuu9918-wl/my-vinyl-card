@@ -15,59 +15,61 @@
     }
     .album-container {
       position: relative;
-      width: 250px; /* 容器宽度调大，给右侧露出的黑胶留出空间 */
+      width: 250px;
       height: 200px;
       cursor: pointer;
     }
-    /* 黑胶唱片：尺寸调大至 196px，与 200px 封面几乎同高 */
+    /* 黑胶唱片：调整定位，使其正好露出红圈边缘 */
     .vinyl {
       position: absolute;
-      right: 0px; /* 默认靠最右侧，露出一大部分 */
+      right: 12px; /* 调整距离，恰好露出红圈边沿 */
       top: 2px;
       width: 196px;
       height: 196px;
       border-radius: 50%;
       z-index: 1;
-      transition: transform 0.4s ease-in-out;
+      /* 加长过渡时间，让收回与旋转动画更柔和自然 */
+      transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
       background: radial-gradient(circle, #111 18%, #333 18%, #111 28%, #222 38%, #111 48%, #222 58%, #111 68%, #000 100%);
       box-shadow: 0 4px 10px rgba(0,0,0,0.3);
       display: flex;
       justify-content: center;
       align-items: center;
     }
-    /* 黑胶中心红轴 */
+    /* 黑胶中心红色唱片标签 */
     .vinyl::after {
       content: '';
-      width: 50px;
-      height: 50px;
-      background: #cc2222;
+      width: 60px;
+      height: 60px;
+      background: #c82828;
       border-radius: 50%;
-      border: 5px solid #000;
+      border: 4px solid #111;
     }
+    /* 中心小孔 */
     .vinyl::before {
       content: '';
       position: absolute;
-      width: 12px;
-      height: 12px;
-      background: #fff;
+      width: 10px;
+      height: 10px;
+      background: #f4f4f4;
       border-radius: 50%;
       z-index: 2;
     }
-    /* 专辑封面：固定在左侧，盖在黑胶上方 */
+    /* 专辑封面：固定在最左侧盖住黑胶 */
     .cover {
       position: absolute;
       left: 0;
       top: 0;
       width: 200px;
       height: 200px;
-      border-radius: 6px;
+      border-radius: 4px;
       object-fit: cover;
       z-index: 2;
       box-shadow: 0 4px 12px rgba(0,0,0,0.25);
     }
-    /* 鼠标悬停时：黑胶向左平移 50px 收回到封面内部，并带有旋转效果 */
+    /* 悬停效果：向左平移 38px 彻底藏进封面，同时逆时针旋转 240 度 */
     .album-container:hover .vinyl {
-      transform: translateX(-50px) rotate(-180deg);
+      transform: translateX(-38px) rotate(-240deg);
     }
   </style>
 </head>
