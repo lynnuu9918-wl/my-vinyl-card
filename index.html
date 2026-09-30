@@ -20,7 +20,7 @@
     }
     .album-container {
       position: relative;
-      width: 260px; /* 留足黑胶抽出后的空间 */
+      width: 260px; /* 留足黑胶抽出后的宽度 */
       height: 200px;
       display: flex;
       align-items: center;
@@ -36,25 +36,33 @@
       z-index: 2;
       box-shadow: 0 6px 16px rgba(0,0,0,0.3);
     }
-    /* 黑胶唱片：初始状态完全藏在封面正下方 (left: 4px居中于200px封面) */
+
+    /* 1. 外层：负责平滑抽出与收回 (X轴平移) */
     .vinyl {
       position: absolute;
-      left: 4px; 
+      left: 4px; /* 静态时完全隐藏在 200px 封面下方 */
       top: 4px;
       width: 192px;
       height: 192px;
-      border-radius: 50%;
       z-index: 1;
-      /* 回退平滑过渡 */
+      /* 鼠标移开时，平滑收回的过渡时间 */
       transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+
+    /* 2. 内层：负责黑胶唱片的盘面视觉与无缝无限旋转 */
+    .vinyl-disc {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
       background: radial-gradient(circle, #151515 18%, #333 18%, #151515 28%, #2a2a2a 38%, #151515 48%, #2a2a2a 58%, #151515 68%, #0d0d0d 100%);
       box-shadow: 0 4px 12px rgba(0,0,0,0.35);
       display: flex;
       justify-content: center;
       align-items: center;
+      position: relative;
     }
-    /* 精确调好的 96px 红芯 */
-    .vinyl::after {
+    /* 96px 红芯 */
+    .vinyl-disc::after {
       content: '';
       width: 96px;
       height: 96px;
@@ -63,7 +71,7 @@
       border: 4px solid #111;
     }
     /* 中心小孔 */
-    .vinyl::before {
+    .vinyl-disc::before {
       content: '';
       position: absolute;
       width: 10px;
@@ -73,22 +81,21 @@
       z-index: 2;
     }
 
-    /* 悬停激活：唱片向右抽出 56px 并持续无缝旋转 */
+    /* 悬停激活状态 */
+    /* 外层抽出 60px */
     .album-container.playing .vinyl {
-      animation: extractAndSpin 3s linear infinite;
+      transform: translateX(60px);
     }
 
-    /* 抽出来的同时顺时针旋转 */
-    @keyframes extractAndSpin {
-      0% {
-        transform: translateX(0) rotate(0deg);
-      }
-      15% {
-        transform: translateX(56px) rotate(90deg); /* 快速抽出并旋转90度 */
-      }
-      100% {
-        transform: translateX(56px) rotate(450deg); /* 在抽出位置继续无缝旋转 */
-      }
+    /* 内层无缝无限旋转 (只要鼠标一直悬停，就一直匀速旋转) */
+    .album-container.playing .vinyl-disc {
+      animation: spin 3s linear infinite;
+    }
+
+    /* 纯粹的旋转动画 */
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
     }
   </style>
 </head>
@@ -96,7 +103,10 @@
 
   <a id="targetLink" class="album-link" href="#" target="_top">
     <div class="album-container" id="albumContainer">
-      <div class="vinyl"></div>
+      <div class="vinyl">
+        <!-- 新增内层盘面，专门跑旋转动画 -->
+        <div class="vinyl-disc"></div>
+      </div>
       <img class="cover" id="albumCover" src="" alt="Album Cover">
     </div>
   </a>
@@ -146,7 +156,7 @@
       bgm.src = decodeURIComponent(audioUrl);
     }
 
-    // 鼠标移入：黑胶边旋转边抽出 + 播放音乐
+    // 鼠标移入：唱片平滑向右抽出 + 内层无缝持续旋转 + 播放音乐
     albumContainer.addEventListener('mouseenter', () => {
       albumContainer.classList.add('playing');
       if (bgm.src) {
@@ -154,7 +164,7 @@
       }
     });
 
-    // 鼠标移出：黑胶平滑收回 + 停止音乐
+    // 鼠标移出：唱片平滑向左收回 + 停止旋转 + 停止音乐并重置进度
     albumContainer.addEventListener('mouseleave', () => {
       albumContainer.classList.remove('playing');
       if (bgm.src) {
