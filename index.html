@@ -20,7 +20,7 @@
     }
     .album-container {
       position: relative;
-      width: 260px;
+      width: 260px; /* 留足黑胶抽出后的空间 */
       height: 200px;
       display: flex;
       align-items: center;
@@ -36,16 +36,17 @@
       z-index: 2;
       box-shadow: 0 6px 16px rgba(0,0,0,0.3);
     }
-    /* 黑胶唱片 base 样式 */
+    /* 黑胶唱片：初始状态完全藏在封面正下方 (left: 4px居中于200px封面) */
     .vinyl {
       position: absolute;
-      left: 60px; 
+      left: 4px; 
       top: 4px;
       width: 192px;
       height: 192px;
       border-radius: 50%;
       z-index: 1;
-      transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+      /* 回退平滑过渡 */
+      transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
       background: radial-gradient(circle, #151515 18%, #333 18%, #151515 28%, #2a2a2a 38%, #151515 48%, #2a2a2a 58%, #151515 68%, #0d0d0d 100%);
       box-shadow: 0 4px 12px rgba(0,0,0,0.35);
       display: flex;
@@ -72,15 +73,22 @@
       z-index: 2;
     }
 
-    /* 悬停激活：唱片抽出并无缝持续旋转 */
+    /* 悬停激活：唱片向右抽出 56px 并持续无缝旋转 */
     .album-container.playing .vinyl {
-      transform: translateX(-60px);
-      animation: spin 3s linear infinite 0.6s;
+      animation: extractAndSpin 3s linear infinite;
     }
 
-    @keyframes spin {
-      from { transform: translateX(-60px) rotate(0deg); }
-      to { transform: translateX(-60px) rotate(360deg); }
+    /* 抽出来的同时顺时针旋转 */
+    @keyframes extractAndSpin {
+      0% {
+        transform: translateX(0) rotate(0deg);
+      }
+      15% {
+        transform: translateX(56px) rotate(90deg); /* 快速抽出并旋转90度 */
+      }
+      100% {
+        transform: translateX(56px) rotate(450deg); /* 在抽出位置继续无缝旋转 */
+      }
     }
   </style>
 </head>
@@ -122,12 +130,11 @@
       const decodedLink = decodeURIComponent(targetUrl);
       targetLinkElem.href = decodedLink;
       
-      // 如果是外部链接（非 notion 链接），在新标签页打开；如果是 Notion 页面链接，直接全屏/原窗口跳转
       if (!decodedLink.includes('notion.so') && !decodedLink.includes('notion.site')) {
         targetLinkElem.target = '_blank';
       }
     } else {
-      targetLinkElem.onclick = (e) => e.preventDefault(); // 无链接时不跳转
+      targetLinkElem.onclick = (e) => e.preventDefault();
     }
 
     // 3. 设置音频播放与 Hover 悬停响应
@@ -139,7 +146,7 @@
       bgm.src = decodeURIComponent(audioUrl);
     }
 
-    // 鼠标移入：唱片抽出 + 播放音乐
+    // 鼠标移入：黑胶边旋转边抽出 + 播放音乐
     albumContainer.addEventListener('mouseenter', () => {
       albumContainer.classList.add('playing');
       if (bgm.src) {
@@ -147,12 +154,12 @@
       }
     });
 
-    // 鼠标移出：唱片收回 + 停止音乐
+    // 鼠标移出：黑胶平滑收回 + 停止音乐
     albumContainer.addEventListener('mouseleave', () => {
       albumContainer.classList.remove('playing');
       if (bgm.src) {
         bgm.pause();
-        bgm.currentTime = 0; // 划出时重置音频播放进度
+        bgm.currentTime = 0;
       }
     });
   </script>
