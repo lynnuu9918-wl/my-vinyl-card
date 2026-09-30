@@ -32,7 +32,7 @@
       z-index: 2;
       box-shadow: 0 6px 16px rgba(0,0,0,0.3);
     }
-    /* 黑胶唱片：恢复原来的定位（left: 60px） */
+    /* 黑胶唱片：定位保持 left: 60px 不变 */
     .vinyl {
       position: absolute;
       left: 60px; 
@@ -48,11 +48,11 @@
       justify-content: center;
       align-items: center;
     }
-    /* 仅放大红芯区域（110px），使其正好露出一丝极窄红边 */
+    /* 将红芯缩小至 88px，恰好只露出一丝极窄红边 */
     .vinyl::after {
       content: '';
-      width: 110px;
-      height: 110px;
+      width: 88px;
+      height: 88px;
       background: #c82424;
       border-radius: 50%;
       border: 4px solid #111;
