@@ -2,6 +2,7 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" href="data:,">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -12,6 +13,9 @@
       align-items: center;
       height: 100vh;
       overflow: hidden;
+      /* 禁止移动端双击默认放大页面与触摸高亮 */
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
     }
     .album-link {
       text-decoration: none;
@@ -45,7 +49,7 @@
       width: 192px;
       height: 192px;
       z-index: 1;
-      /* 鼠标移开时，平滑收回的过渡时间 */
+      /* 平滑收回的过渡时间 */
       transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
     }
 
@@ -81,13 +85,13 @@
       z-index: 2;
     }
 
-    /* 悬停激活状态 */
+    /* 悬停/播放激活状态 */
     /* 外层抽出 60px */
     .album-container.playing .vinyl {
       transform: translateX(60px);
     }
 
-    /* 内层无缝无限旋转 (只要鼠标一直悬停，就一直匀速旋转) */
+    /* 内层无缝无限旋转 */
     .album-container.playing .vinyl-disc {
       animation: spin 3s linear infinite;
     }
@@ -104,7 +108,6 @@
   <a id="targetLink" class="album-link" href="#" target="_top">
     <div class="album-container" id="albumContainer">
       <div class="vinyl">
-        <!-- 新增内层盘面，专门跑旋转动画 -->
         <div class="vinyl-disc"></div>
       </div>
       <img class="cover" id="albumCover" src="" alt="Album Cover">
@@ -133,21 +136,23 @@
       document.getElementById('albumCover').src = defaultCover;
     }
 
-    // 2. 设置 Notion 内部页面/外部跳转链接
+    // 2. 解析链接与打开方式
     const targetUrl = urlParams.get('link');
     const targetLinkElem = document.getElementById('targetLink');
+    let redirectUrl = null;
+    let redirectTarget = '_top';
+
     if (targetUrl) {
-      const decodedLink = decodeURIComponent(targetUrl);
-      targetLinkElem.href = decodedLink;
+      redirectUrl = decodeURIComponent(targetUrl);
+      targetLinkElem.href = redirectUrl;
       
-      if (!decodedLink.includes('notion.so') && !decodedLink.includes('notion.site')) {
+      if (!redirectUrl.includes('notion.so') && !redirectUrl.includes('notion.site')) {
+        redirectTarget = '_blank';
         targetLinkElem.target = '_blank';
       }
-    } else {
-      targetLinkElem.onclick = (e) => e.preventDefault();
     }
 
-    // 3. 设置音频播放与 Hover 悬停响应
+    // 3. 音频与交互逻辑
     const audioUrl = urlParams.get('audio');
     const bgm = document.getElementById('bgm');
     const albumContainer = document.getElementById('albumContainer');
@@ -156,22 +161,83 @@
       bgm.src = decodeURIComponent(audioUrl);
     }
 
-    // 鼠标移入：唱片平滑向右抽出 + 内层无缝持续旋转 + 播放音乐
-    albumContainer.addEventListener('mouseenter', () => {
+    // 播放控制
+    function startPlay() {
       albumContainer.classList.add('playing');
       if (bgm.src) {
-        bgm.play().catch(e => console.log('自动播放提示：若未发声音，可在页面任意空白处点击一下'));
+        bgm.play().catch(e => console.log('自动播放提示：若未发声音，需先与页面交互'));
       }
-    });
+    }
 
-    // 鼠标移出：唱片平滑向左收回 + 停止旋转 + 停止音乐并重置进度
-    albumContainer.addEventListener('mouseleave', () => {
+    function stopPlay() {
       albumContainer.classList.remove('playing');
       if (bgm.src) {
         bgm.pause();
         bgm.currentTime = 0;
       }
-    });
+    }
+
+    function togglePlay() {
+      if (albumContainer.classList.contains('playing')) {
+        stopPlay();
+      } else {
+        startPlay();
+      }
+    }
+
+    // 检测设备能力
+    const isHoverSupported = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+
+    // 定时器变量，用于区分单击与双击
+    let clickTimeout = null;
+
+    if (isHoverSupported) {
+      // ================= PC 端逻辑 =================
+      // PC 端悬停：移入抽出播放，移出收回
+      albumContainer.addEventListener('mouseenter', startPlay);
+      albumContainer.addEventListener('mouseleave', stopPlay);
+
+      // PC 端点击：防止默认点击直接跳转，双击才跳转
+      targetLinkElem.addEventListener('click', (e) => {
+        e.preventDefault(); // 阻止 <a> 标签默认单击跳转
+        
+        if (clickTimeout === null) {
+          // 第一次点击，启动 300ms 倒计时
+          clickTimeout = setTimeout(() => {
+            clickTimeout = null; // 超过 300ms 无第二次点击，判定为普通单击（不做跳转）
+          }, 300);
+        } else {
+          // 300ms 内第二次点击，判定为双击 -> 执行跳转
+          clearTimeout(clickTimeout);
+          clickTimeout = null;
+          if (redirectUrl) {
+            window.open(redirectUrl, redirectTarget);
+          }
+        }
+      });
+
+    } else {
+      // ================= 移动端逻辑 =================
+      targetLinkElem.addEventListener('click', (e) => {
+        e.preventDefault(); // 阻止默认跳转行为
+
+        if (clickTimeout === null) {
+          // 第一次点击：启动 300ms 倒计时，等待是否触发双击
+          clickTimeout = setTimeout(() => {
+            clickTimeout = null;
+            // 判定为单击：切换唱片抽出/播放或收回/暂停
+            togglePlay();
+          }, 300);
+        } else {
+          // 300ms 内连续点第二次：判定为双击 -> 跳转链接
+          clearTimeout(clickTimeout);
+          clickTimeout = null;
+          if (redirectUrl) {
+            window.open(redirectUrl, redirectTarget);
+          }
+        }
+      });
+    }
   </script>
 
 </body>
