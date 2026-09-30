@@ -13,11 +13,15 @@
       height: 100vh;
       overflow: hidden;
     }
+    .album-link {
+      text-decoration: none;
+      display: inline-block;
+      cursor: pointer;
+    }
     .album-container {
       position: relative;
       width: 260px;
       height: 200px;
-      cursor: pointer;
       display: flex;
       align-items: center;
     }
@@ -32,7 +36,7 @@
       z-index: 2;
       box-shadow: 0 6px 16px rgba(0,0,0,0.3);
     }
-    /* 黑胶唱片：定位保持 left: 60px 不变 */
+    /* 黑胶唱片 base 样式 */
     .vinyl {
       position: absolute;
       left: 60px; 
@@ -41,14 +45,14 @@
       height: 192px;
       border-radius: 50%;
       z-index: 1;
-      transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+      transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
       background: radial-gradient(circle, #151515 18%, #333 18%, #151515 28%, #2a2a2a 38%, #151515 48%, #2a2a2a 58%, #151515 68%, #0d0d0d 100%);
       box-shadow: 0 4px 12px rgba(0,0,0,0.35);
       display: flex;
       justify-content: center;
       align-items: center;
     }
-    /* 红芯适当调大至 96px，正好探出一丝极窄的红边 */
+    /* 精确调好的 96px 红芯 */
     .vinyl::after {
       content: '';
       width: 96px;
@@ -57,7 +61,7 @@
       border-radius: 50%;
       border: 4px solid #111;
     }
-    /* 唱片中心小孔 */
+    /* 中心小孔 */
     .vinyl::before {
       content: '';
       position: absolute;
@@ -67,40 +71,90 @@
       border-radius: 50%;
       z-index: 2;
     }
-    /* 悬停（Hover）平移 -60px 完全收回 */
-    .album-container:hover .vinyl {
-      transform: translateX(-60px) rotate(-180deg);
+
+    /* 悬停激活：唱片抽出并无缝持续旋转 */
+    .album-container.playing .vinyl {
+      transform: translateX(-60px);
+      animation: spin 3s linear infinite 0.6s;
+    }
+
+    @keyframes spin {
+      from { transform: translateX(-60px) rotate(0deg); }
+      to { transform: translateX(-60px) rotate(360deg); }
     }
   </style>
 </head>
 <body>
 
-  <div class="album-container">
-    <div class="vinyl"></div>
-    <img class="cover" id="albumCover" src="" alt="Album Cover">
-  </div>
+  <a id="targetLink" class="album-link" href="#" target="_top">
+    <div class="album-container" id="albumContainer">
+      <div class="vinyl"></div>
+      <img class="cover" id="albumCover" src="" alt="Album Cover">
+    </div>
+  </a>
+
+  <!-- 音频播放器 -->
+  <audio id="bgm" preload="auto"></audio>
 
   <script>
     const urlParams = new URLSearchParams(window.location.search);
+    
+    // 1. 设置封面图片
     let coverName = urlParams.get('cover');
     const defaultCover = 'https://dummyimage.com/200x200/cccccc/ffffff.png&text=No+Cover';
-    
     if (coverName) {
       coverName = decodeURIComponent(coverName).trim();
       if (coverName.startsWith('http://') || coverName.startsWith('https://')) {
         document.getElementById('albumCover').src = coverName;
       } else {
-        if (coverName.startsWith('covers/')) {
-          coverName = coverName.replace('covers/', '');
-        }
-        if (!coverName.includes('.')) {
-          coverName += '.png';
-        }
+        if (coverName.startsWith('covers/')) coverName = coverName.replace('covers/', '');
+        if (!coverName.includes('.')) coverName += '.png';
         document.getElementById('albumCover').src = `./covers/${coverName}`;
       }
     } else {
       document.getElementById('albumCover').src = defaultCover;
     }
+
+    // 2. 设置 Notion 内部页面/外部跳转链接
+    const targetUrl = urlParams.get('link');
+    const targetLinkElem = document.getElementById('targetLink');
+    if (targetUrl) {
+      const decodedLink = decodeURIComponent(targetUrl);
+      targetLinkElem.href = decodedLink;
+      
+      // 如果是外部链接（非 notion 链接），在新标签页打开；如果是 Notion 页面链接，直接全屏/原窗口跳转
+      if (!decodedLink.includes('notion.so') && !decodedLink.includes('notion.site')) {
+        targetLinkElem.target = '_blank';
+      }
+    } else {
+      targetLinkElem.onclick = (e) => e.preventDefault(); // 无链接时不跳转
+    }
+
+    // 3. 设置音频播放与 Hover 悬停响应
+    const audioUrl = urlParams.get('audio');
+    const bgm = document.getElementById('bgm');
+    const albumContainer = document.getElementById('albumContainer');
+
+    if (audioUrl) {
+      bgm.src = decodeURIComponent(audioUrl);
+    }
+
+    // 鼠标移入：唱片抽出 + 播放音乐
+    albumContainer.addEventListener('mouseenter', () => {
+      albumContainer.classList.add('playing');
+      if (bgm.src) {
+        bgm.play().catch(e => console.log('自动播放提示：若未发声音，可在页面任意空白处点击一下'));
+      }
+    });
+
+    // 鼠标移出：唱片收回 + 停止音乐
+    albumContainer.addEventListener('mouseleave', () => {
+      albumContainer.classList.remove('playing');
+      if (bgm.src) {
+        bgm.pause();
+        bgm.currentTime = 0; // 划出时重置音频播放进度
+      }
+    });
   </script>
 
 </body>
