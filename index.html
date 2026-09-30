@@ -19,6 +19,7 @@
       height: 200px;
       cursor: pointer;
     }
+    /* 黑胶唱片：SVG 纯代码绘制 */
     .vinyl {
       position: absolute;
       left: -20px;
@@ -28,7 +29,32 @@
       border-radius: 50%;
       z-index: 1;
       transition: transform 0.4s ease-in-out;
+      /* 纯黑胶金属质感与纹理效果 */
+      background: radial-gradient(circle, #111 18%, #333 18%, #111 28%, #222 38%, #111 48%, #222 58%, #111 68%, #000 100%);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
+    /* 黑胶中心红轴 */
+    .vinyl::after {
+      content: '';
+      width: 50px;
+      height: 50px;
+      background: #cc2222;
+      border-radius: 50%;
+      border: 5px solid #000;
+    }
+    .vinyl::before {
+      content: '';
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      background: #fff;
+      border-radius: 50%;
+      z-index: 2;
+    }
+    /* 专辑封面：盖在黑胶上方 */
     .cover {
       position: absolute;
       right: 0;
@@ -40,6 +66,7 @@
       z-index: 2;
       box-shadow: 0 4px 12px rgba(0,0,0,0.25);
     }
+    /* 鼠标悬停抽出与旋转效果 */
     .album-container:hover .vinyl {
       transform: translateX(-50px) rotate(180deg);
     }
@@ -48,7 +75,9 @@
 <body>
 
   <div class="album-container">
-    <img class="vinyl" src="https://img.icons8.com/emoji/200/vinyl-record-emoji.png" alt="Vinyl">
+    <!-- SVG / CSS 绘制的黑胶 -->
+    <div class="vinyl"></div>
+    <!-- 动态替换的专辑封面 -->
     <img class="cover" id="albumCover" src="" alt="Album Cover">
   </div>
 
@@ -59,22 +88,15 @@
     
     if (coverName) {
       coverName = decodeURIComponent(coverName).trim();
-      
-      // 1. 网络完整外链 (http/https)
       if (coverName.startsWith('http://') || coverName.startsWith('https://')) {
         document.getElementById('albumCover').src = coverName;
-      } 
-      // 2. 本地仓库图片处理
-      else {
-        // 如果用户写了 covers/ 前缀，先去掉，方便统一处理
+      } else {
         if (coverName.startsWith('covers/')) {
           coverName = coverName.replace('covers/', '');
         }
-        // 如果没写文件后缀，默认补上 .png
         if (!coverName.includes('.')) {
           coverName += '.png';
         }
-        // 统一拼接 covers/ 路径
         document.getElementById('albumCover').src = `./covers/${coverName}`;
       }
     } else {
