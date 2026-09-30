@@ -13,50 +13,16 @@
       height: 100vh;
       overflow: hidden;
     }
-    /* 1. 加宽容器宽度（从 250px 改为 280px），给黑胶向右凸出留足空间 */
+    /* 整个组件的整体容器 */
     .album-container {
       position: relative;
-      width: 280px; 
+      width: 260px;
       height: 200px;
       cursor: pointer;
-    }
-    /* 2. 调整黑胶定位（right: 0px），使其向右移出更多，露出红圈 */
-    .vinyl {
-      position: absolute;
-      right: 0px; 
-      top: 2px;
-      width: 196px;
-      height: 196px;
-      border-radius: 50%;
-      z-index: 1;
-      /* 动画过渡时间与缓动曲线 */
-      transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-      background: radial-gradient(circle, #111 18%, #333 18%, #111 28%, #222 38%, #111 48%, #222 58%, #111 68%, #000 100%);
-      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
       display: flex;
-      justify-content: center;
       align-items: center;
     }
-    /* 黑胶中心红色唱片标签 */
-    .vinyl::after {
-      content: '';
-      width: 60px;
-      height: 60px;
-      background: #c82828;
-      border-radius: 50%;
-      border: 4px solid #111;
-    }
-    /* 中心小孔 */
-    .vinyl::before {
-      content: '';
-      position: absolute;
-      width: 10px;
-      height: 10px;
-      background: #f4f4f4;
-      border-radius: 50%;
-      z-index: 2;
-    }
-    /* 专辑封面：固定在最左侧 */
+    /* 封面：调整高度与黑胶形成完美契合（200px × 200px） */
     .cover {
       position: absolute;
       left: 0;
@@ -66,11 +32,47 @@
       border-radius: 4px;
       object-fit: cover;
       z-index: 2;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.3);
     }
-    /* 3. 悬停效果：加大向左平移的距离（-75px），确保能完全收回藏入封面后 */
+    /* 黑胶唱片：尺寸调整为 192px（略小于封面），默认居中露出一部分 */
+    .vinyl {
+      position: absolute;
+      left: 60px; /* 默认起始位置：红圈正好贴在封面右边缘内部 */
+      top: 4px;
+      width: 192px;
+      height: 192px;
+      border-radius: 50%;
+      z-index: 1;
+      /* 极其流畅的收回与旋转平滑曲线 */
+      transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+      background: radial-gradient(circle, #151515 18%, #333 18%, #151515 28%, #2a2a2a 38%, #151515 48%, #2a2a2a 58%, #151515 68%, #0d0d0d 100%);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    /* 红色中央唱片芯：调大尺寸比例（72px），自然露出一小抹红色 */
+    .vinyl::after {
+      content: '';
+      width: 72px;
+      height: 72px;
+      background: #c82424;
+      border-radius: 50%;
+      border: 4px solid #111;
+    }
+    /* 唱片中心小孔 */
+    .vinyl::before {
+      content: '';
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background: #f0f0f0;
+      border-radius: 50%;
+      z-index: 2;
+    }
+    /* 悬停（Hover）效果：向左自然收回藏进封面（平移 -56px），同时带着精致的旋转效果 */
     .album-container:hover .vinyl {
-      transform: translateX(-75px) rotate(-240deg);
+      transform: translateX(-56px) rotate(-180deg);
     }
   </style>
 </head>
