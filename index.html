@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- 忽略 Referrer，防止某些外链音频/图片因防盗链拦截 -->
+  <meta name="referrer" content="no-referrer">
   <link rel="icon" href="data:,">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -136,7 +138,7 @@
       document.getElementById('albumCover').src = defaultCover;
     }
 
-    // 2. 解析链接与打开方式
+    // 2. 解析 Notion 跳转链接
     const targetUrl = urlParams.get('link');
     const targetLinkElem = document.getElementById('targetLink');
     let redirectUrl = null;
@@ -152,7 +154,7 @@
       }
     }
 
-    // 3. 音频与交互逻辑
+    // 3. 音频与播放逻辑
     const audioUrl = urlParams.get('audio');
     const bgm = document.getElementById('bgm');
     const albumContainer = document.getElementById('albumContainer');
@@ -161,11 +163,13 @@
       bgm.src = decodeURIComponent(audioUrl);
     }
 
-    // 播放控制
+    // 播放与暂停控制
     function startPlay() {
       albumContainer.classList.add('playing');
       if (bgm.src) {
-        bgm.play().catch(e => console.log('自动播放提示：若未发声音，需先与页面交互'));
+        bgm.play().catch(e => {
+          console.log('等待用户点击解锁音频权限');
+        });
       }
     }
 
@@ -185,29 +189,29 @@
       }
     }
 
-    // 检测设备能力
+    // 检测设备是否支持鼠标悬停（PC端）
     const isHoverSupported = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-
-    // 定时器变量，用于区分单击与双击
     let clickTimeout = null;
 
     if (isHoverSupported) {
-      // ================= PC 端逻辑 =================
-      // PC 端悬停：移入抽出播放，移出收回
+      // --- PC 端逻辑 ---
+      // 1. 悬停机制：鼠标移入抽出播放，移出收回暂停（已解锁权限时生效）
       albumContainer.addEventListener('mouseenter', startPlay);
       albumContainer.addEventListener('mouseleave', stopPlay);
 
-      // PC 端点击：防止默认点击直接跳转，双击才跳转
+      // 2. 点击机制：单击直接播放/暂停（可直接解锁浏览器权限），双击跳转 Notion
       targetLinkElem.addEventListener('click', (e) => {
-        e.preventDefault(); // 阻止 <a> 标签默认单击跳转
+        e.preventDefault(); // 阻止默认单击跳转
         
         if (clickTimeout === null) {
-          // 第一次点击，启动 300ms 倒计时
+          // 第一次点击：启动 300ms 判断窗口
           clickTimeout = setTimeout(() => {
-            clickTimeout = null; // 超过 300ms 无第二次点击，判定为普通单击（不做跳转）
+            clickTimeout = null;
+            // 单击：直接切换播放/暂停（同时瞬间解锁声音权限并播放声音）
+            togglePlay();
           }, 300);
         } else {
-          // 300ms 内第二次点击，判定为双击 -> 执行跳转
+          // 300ms 内连续点击第二次：判定为双击 -> 执行跳转
           clearTimeout(clickTimeout);
           clickTimeout = null;
           if (redirectUrl) {
@@ -217,23 +221,20 @@
       });
 
     } else {
-      // ================= 移动端逻辑 =================
+      // --- 移动端逻辑 ---
       targetLinkElem.addEventListener('click', (e) => {
-        e.preventDefault(); // 阻止默认跳转行为
+        e.preventDefault();
 
         if (clickTimeout === null) {
-          // 第一次点击：启动 300ms 倒计时，等待是否触发双击
           clickTimeout = setTimeout(() => {
             clickTimeout = null;
-            // 判定为单击：切换唱片抽出/播放或收回/暂停
-            togglePlay();
+            togglePlay(); // 单击：抽出播放 / 收回暂停
           }, 300);
         } else {
-          // 300ms 内连续点第二次：判定为双击 -> 跳转链接
           clearTimeout(clickTimeout);
           clickTimeout = null;
           if (redirectUrl) {
-            window.open(redirectUrl, redirectTarget);
+            window.open(redirectUrl, redirectTarget); // 双击：跳转 Notion
           }
         }
       });
