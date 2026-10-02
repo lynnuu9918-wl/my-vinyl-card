@@ -163,12 +163,17 @@
       bgm.src = decodeURIComponent(audioUrl);
     }
 
-    // 播放与暂停控制
+    // 标识音频权限是否解锁
+    let isAudioUnlocked = false;
+
+    // 播放与暂停函数
     function startPlay() {
       albumContainer.classList.add('playing');
       if (bgm.src) {
-        bgm.play().catch(e => {
-          console.log('等待用户点击解锁音频权限');
+        bgm.play().then(() => {
+          isAudioUnlocked = true;
+        }).catch(e => {
+          console.log('等待用户产生有效点击以解锁音频权限');
         });
       }
     }
@@ -189,26 +194,38 @@
       }
     }
 
-    // 检测设备是否支持鼠标悬停（PC端）
+    // 全局静默解锁：只要用户在页面产生过任意点击（无论点哪里），后台无感激活音频权限
+    window.addEventListener('click', () => {
+      if (!isAudioUnlocked && bgm.src) {
+        bgm.play().then(() => {
+          isAudioUnlocked = true;
+          // 如果当前鼠标并未悬停在唱片上，激活权限后立刻恢复暂停状态
+          if (!albumContainer.classList.contains('playing')) {
+            bgm.pause();
+            bgm.currentTime = 0;
+          }
+        }).catch(() => {});
+      }
+    });
+
+    // 检测设备类型
     const isHoverSupported = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
     let clickTimeout = null;
 
     if (isHoverSupported) {
       // --- PC 端逻辑 ---
-      // 1. 悬停机制：鼠标移入抽出播放，移出收回暂停（已解锁权限时生效）
+      // 1. 纯粹的悬停播放与移出暂停
       albumContainer.addEventListener('mouseenter', startPlay);
       albumContainer.addEventListener('mouseleave', stopPlay);
 
-      // 2. 点击机制：单击直接播放/暂停（可直接解锁浏览器权限），双击跳转 Notion
+      // 2. 双击跳转 Notion 逻辑（拦截单击跳转）
       targetLinkElem.addEventListener('click', (e) => {
-        e.preventDefault(); // 阻止默认单击跳转
+        e.preventDefault();
         
         if (clickTimeout === null) {
-          // 第一次点击：启动 300ms 判断窗口
+          // 第一次点击：启动 300ms 计时器（防止误触单次点击直接跳转）
           clickTimeout = setTimeout(() => {
             clickTimeout = null;
-            // 单击：直接切换播放/暂停（同时瞬间解锁声音权限并播放声音）
-            togglePlay();
           }, 300);
         } else {
           // 300ms 内连续点击第二次：判定为双击 -> 执行跳转
