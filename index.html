@@ -87,6 +87,10 @@
       from { transform: rotate(0deg); }
       to { transform: rotate(360deg); }
     }
+    /* 隐藏调试 audio 控件 */
+    #bgm {
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -100,7 +104,8 @@
     </div>
   </a>
 
-  <audio id="bgm" preload="auto"></audio>
+  <!-- 音频标签：显式取消静音并确保跨域加载 -->
+  <audio id="bgm" crossorigin="anonymous" preload="auto"></audio>
 
   <script>
     const urlParams = new URLSearchParams(window.location.search);
@@ -145,23 +150,39 @@
       bgm.src = decodeURIComponent(audioUrl);
     }
 
-    // 记录权限状态
-    let isUnlocked = false;
+    // 创建 Web Audio Context 用于彻底激活系统扬声器权限
+    let audioCtx = null;
 
-    // 强行播放/解锁函数
-    function playAudio() {
+    function forcePlayAudio() {
       if (!bgm.src) return;
+
+      // 强行取消静音并将音量调至最大
+      bgm.muted = false;
+      bgm.volume = 1.0;
+
+      // 激活 AudioContext
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+
       const playPromise = bgm.play();
       if (playPromise !== undefined) {
-        playPromise.then(() => {
-          isUnlocked = true;
-        }).catch(() => {});
+        playPromise.catch(() => {
+          // 如果被拦截，尝试静音播放再解冻
+          bgm.muted = true;
+          bgm.play().then(() => {
+            bgm.muted = false;
+          }).catch(() => {});
+        });
       }
     }
 
     function startPlay() {
       albumContainer.classList.add('playing');
-      playAudio();
+      forcePlayAudio();
     }
 
     function stopPlay() {
@@ -172,11 +193,17 @@
       }
     }
 
-    // 页面任意位置点击即可同步解锁权限
-    window.addEventListener('click', () => {
-      if (!isUnlocked) {
-        playAudio();
-      }
+    // 移动端/PC端 首次任意交互解锁
+    const unlockEvents = ['click', 'touchstart', 'pointerdown'];
+    unlockEvents.forEach(evt => {
+      window.addEventListener(evt, function unlock() {
+        if (bgm.src) {
+          bgm.muted = false;
+          bgm.volume = 1.0;
+          if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+      }, { once: true });
     });
 
     const isHoverSupported = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
@@ -190,8 +217,8 @@
       targetLinkElem.addEventListener('click', (e) => {
         e.preventDefault();
         
-        // 单击卡片时，第一时间强行调用播放，确保浏览器认为这是有效点击解锁
-        playAudio();
+        // 点击卡片强制解锁并播放
+        startPlay();
 
         if (clickTimeout === null) {
           clickTimeout = setTimeout(() => {
