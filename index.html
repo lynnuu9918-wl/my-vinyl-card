@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- 忽略 Referrer，防止某些外链音频/图片因防盗链拦截 -->
   <meta name="referrer" content="no-referrer">
   <link rel="icon" href="data:,">
   <style>
@@ -15,7 +14,6 @@
       align-items: center;
       height: 100vh;
       overflow: hidden;
-      /* 禁止移动端双击默认放大页面与触摸高亮 */
       -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
     }
@@ -26,7 +24,7 @@
     }
     .album-container {
       position: relative;
-      width: 260px; /* 留足黑胶抽出后的宽度 */
+      width: 260px;
       height: 200px;
       display: flex;
       align-items: center;
@@ -42,20 +40,15 @@
       z-index: 2;
       box-shadow: 0 6px 16px rgba(0,0,0,0.3);
     }
-
-    /* 1. 外层：负责平滑抽出与收回 (X轴平移) */
     .vinyl {
       position: absolute;
-      left: 4px; /* 静态时完全隐藏在 200px 封面下方 */
+      left: 4px;
       top: 4px;
       width: 192px;
       height: 192px;
       z-index: 1;
-      /* 平滑收回的过渡时间 */
       transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
     }
-
-    /* 2. 内层：负责黑胶唱片的盘面视觉与无缝无限旋转 */
     .vinyl-disc {
       width: 100%;
       height: 100%;
@@ -67,7 +60,6 @@
       align-items: center;
       position: relative;
     }
-    /* 96px 红芯 */
     .vinyl-disc::after {
       content: '';
       width: 96px;
@@ -76,7 +68,6 @@
       border-radius: 50%;
       border: 4px solid #111;
     }
-    /* 中心小孔 */
     .vinyl-disc::before {
       content: '';
       position: absolute;
@@ -86,19 +77,12 @@
       border-radius: 50%;
       z-index: 2;
     }
-
-    /* 悬停/播放激活状态 */
-    /* 外层抽出 60px */
     .album-container.playing .vinyl {
       transform: translateX(60px);
     }
-
-    /* 内层无缝无限旋转 */
     .album-container.playing .vinyl-disc {
       animation: spin 3s linear infinite;
     }
-
-    /* 纯粹的旋转动画 */
     @keyframes spin {
       from { transform: rotate(0deg); }
       to { transform: rotate(360deg); }
@@ -116,7 +100,6 @@
     </div>
   </a>
 
-  <!-- 音频播放器 -->
   <audio id="bgm" preload="auto"></audio>
 
   <script>
@@ -147,14 +130,13 @@
     if (targetUrl) {
       redirectUrl = decodeURIComponent(targetUrl);
       targetLinkElem.href = redirectUrl;
-      
       if (!redirectUrl.includes('notion.so') && !redirectUrl.includes('notion.site')) {
         redirectTarget = '_blank';
         targetLinkElem.target = '_blank';
       }
     }
 
-    // 3. 音频与播放逻辑
+    // 3. 音频逻辑
     const audioUrl = urlParams.get('audio');
     const bgm = document.getElementById('bgm');
     const albumContainer = document.getElementById('albumContainer');
@@ -163,25 +145,23 @@
       bgm.src = decodeURIComponent(audioUrl);
     }
 
-    // 标记用户是否已经与页面产生过有效交互
-    let userHasInteracted = false;
+    // 记录权限状态
+    let isUnlocked = false;
 
-    // 播放与暂停函数
+    // 强行播放/解锁函数
+    function playAudio() {
+      if (!bgm.src) return;
+      const playPromise = bgm.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          isUnlocked = true;
+        }).catch(() => {});
+      }
+    }
+
     function startPlay() {
       albumContainer.classList.add('playing');
-      if (bgm.src) {
-        // 强制重新加载，防止缓存异常阻塞
-        if (bgm.readyState === 0) bgm.load();
-        
-        const playPromise = bgm.play();
-        if (playPromise !== undefined) {
-          playPromise.then(() => {
-            userHasInteracted = true;
-          }).catch(e => {
-            console.log('等待用户产生有效点击以解锁音频权限');
-          });
-        }
-      }
+      playAudio();
     }
 
     function stopPlay() {
@@ -192,46 +172,26 @@
       }
     }
 
-    function togglePlay() {
-      if (albumContainer.classList.contains('playing')) {
-        stopPlay();
-      } else {
-        startPlay();
+    // 页面任意位置点击即可同步解锁权限
+    window.addEventListener('click', () => {
+      if (!isUnlocked) {
+        playAudio();
       }
-    }
+    });
 
-    // 全局监听用户首次点击/触摸：使用 pointerdown 确保最快向浏览器解锁权限
-    window.addEventListener('pointerdown', function unlockAudio() {
-      if (!userHasInteracted && bgm.src) {
-        bgm.play().then(() => {
-          userHasInteracted = true;
-          // 如果此时鼠标不在唱片上，放完瞬间暂停；如果在唱片上则保持播放
-          if (!albumContainer.classList.contains('playing')) {
-            bgm.pause();
-            bgm.currentTime = 0;
-          }
-        }).catch(() => {});
-      }
-    }, { once: true });
-
-    // 检测设备类型（PC端与移动端分离处理）
     const isHoverSupported = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
     let clickTimeout = null;
 
     if (isHoverSupported) {
-      // --- PC 端逻辑 ---
-      // 1. 悬停播放，移出收回
+      // --- PC 端 ---
       albumContainer.addEventListener('mouseenter', startPlay);
       albumContainer.addEventListener('mouseleave', stopPlay);
 
-      // 2. 双击跳转 Notion 逻辑
       targetLinkElem.addEventListener('click', (e) => {
         e.preventDefault();
         
-        // 如果悬停因为权限尚未解锁而没发出声音，点击卡片时强制播放一次
-        if (bgm.paused && albumContainer.classList.contains('playing')) {
-          startPlay();
-        }
+        // 单击卡片时，第一时间强行调用播放，确保浏览器认为这是有效点击解锁
+        playAudio();
 
         if (clickTimeout === null) {
           clickTimeout = setTimeout(() => {
@@ -247,20 +207,24 @@
       });
 
     } else {
-      // --- 移动端逻辑 ---
+      // --- 移动端 ---
       targetLinkElem.addEventListener('click', (e) => {
         e.preventDefault();
 
         if (clickTimeout === null) {
           clickTimeout = setTimeout(() => {
             clickTimeout = null;
-            togglePlay(); // 单击：抽出播放 / 收回暂停
+            if (albumContainer.classList.contains('playing')) {
+              stopPlay();
+            } else {
+              startPlay();
+            }
           }, 300);
         } else {
           clearTimeout(clickTimeout);
           clickTimeout = null;
           if (redirectUrl) {
-            window.open(redirectUrl, redirectTarget); // 双击：跳转 Notion
+            window.open(redirectUrl, redirectTarget);
           }
         }
       });
