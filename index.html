@@ -163,18 +163,24 @@
       bgm.src = decodeURIComponent(audioUrl);
     }
 
-    // 标识音频权限是否解锁
-    let isAudioUnlocked = false;
+    // 标记用户是否已经与页面产生过有效交互
+    let userHasInteracted = false;
 
     // 播放与暂停函数
     function startPlay() {
       albumContainer.classList.add('playing');
       if (bgm.src) {
-        bgm.play().then(() => {
-          isAudioUnlocked = true;
-        }).catch(e => {
-          console.log('等待用户产生有效点击以解锁音频权限');
-        });
+        // 强制重新加载，防止缓存异常阻塞
+        if (bgm.readyState === 0) bgm.load();
+        
+        const playPromise = bgm.play();
+        if (playPromise !== undefined) {
+          playPromise.then(() => {
+            userHasInteracted = true;
+          }).catch(e => {
+            console.log('等待用户产生有效点击以解锁音频权限');
+          });
+        }
       }
     }
 
@@ -194,41 +200,44 @@
       }
     }
 
-    // 全局静默解锁：只要用户在页面产生过任意点击（无论点哪里），后台无感激活音频权限
-    window.addEventListener('click', () => {
-      if (!isAudioUnlocked && bgm.src) {
+    // 全局监听用户首次点击/触摸：使用 pointerdown 确保最快向浏览器解锁权限
+    window.addEventListener('pointerdown', function unlockAudio() {
+      if (!userHasInteracted && bgm.src) {
         bgm.play().then(() => {
-          isAudioUnlocked = true;
-          // 如果当前鼠标并未悬停在唱片上，激活权限后立刻恢复暂停状态
+          userHasInteracted = true;
+          // 如果此时鼠标不在唱片上，放完瞬间暂停；如果在唱片上则保持播放
           if (!albumContainer.classList.contains('playing')) {
             bgm.pause();
             bgm.currentTime = 0;
           }
         }).catch(() => {});
       }
-    });
+    }, { once: true });
 
-    // 检测设备类型
+    // 检测设备类型（PC端与移动端分离处理）
     const isHoverSupported = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
     let clickTimeout = null;
 
     if (isHoverSupported) {
       // --- PC 端逻辑 ---
-      // 1. 纯粹的悬停播放与移出暂停
+      // 1. 悬停播放，移出收回
       albumContainer.addEventListener('mouseenter', startPlay);
       albumContainer.addEventListener('mouseleave', stopPlay);
 
-      // 2. 双击跳转 Notion 逻辑（拦截单击跳转）
+      // 2. 双击跳转 Notion 逻辑
       targetLinkElem.addEventListener('click', (e) => {
         e.preventDefault();
         
+        // 如果悬停因为权限尚未解锁而没发出声音，点击卡片时强制播放一次
+        if (bgm.paused && albumContainer.classList.contains('playing')) {
+          startPlay();
+        }
+
         if (clickTimeout === null) {
-          // 第一次点击：启动 300ms 计时器（防止误触单次点击直接跳转）
           clickTimeout = setTimeout(() => {
             clickTimeout = null;
           }, 300);
         } else {
-          // 300ms 内连续点击第二次：判定为双击 -> 执行跳转
           clearTimeout(clickTimeout);
           clickTimeout = null;
           if (redirectUrl) {
